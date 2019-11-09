@@ -32,20 +32,12 @@ void setup() {
   Serial.begin(115200);
   while (!Serial);
   
-  // Start IO connection
-  io.connect();
-  while (io.status() < AIO_CONNECTED) { delay(500); }
-
-  // Show IO connection status
-  Serial.println(io.statusText());
-
   // Setup display
   //reset OLED display via software
   pinMode(OLED_RST, OUTPUT);
   digitalWrite(OLED_RST, LOW);
   delay(20);
   digitalWrite(OLED_RST, HIGH);
-
   //initialize OLED
   Wire.begin(OLED_SDA, OLED_SCL);
   if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR, false, false)) {
@@ -55,22 +47,29 @@ void setup() {
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(1);
-  display.setCursor(0,0);
-  display.print("IO Sender");
-  display.display();
+  displayMsg("Display OK");
+
+  // Start IO connection
+  io.connect();
+  displayMsg("Connecting to Adafruit IO");
+  Serial.print("Connecting to Adafruit IO");
+  while (io.status() < AIO_CONNECTED) { Serial.print("."); delay(1000); }
+  Serial.println();
+  // Show IO connection status
+  Serial.println(io.statusText());
+  displayMsg(io.statusText());
 
   // Initialize LoRa
+  displayMsg("Initialize LoRa");
   SPI.begin(5,19,27,18);
   LoRa.setPins(SS,RST,DI0);
   if (!LoRa.begin(BAND)) {
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.print("LoRa Initialization failed!");
-    display.display();
-
+    displayMsg("LoRa Initialization failed!");
     Serial.println("LoRa Initialization failed!");
     while (1);  // Don't proceed, loop forever
   }
+  Serial.println("LoRa Initialized");
+  displayMsg("LoRa Initialized");
 }
 
 void loop() {
@@ -116,9 +115,12 @@ String getPacketAsStr() {
   return "\0";
 }
 
-void wait_minutes(int minutes) {
-  int seconds = minutes * 60;
-  for (int i = 0; i < seconds; i++) { delay(1000); }
+void displayMsg(String msg) {
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.print(msg);
+  display.display();
+  delay(1000);
 }
 
 void printCount() {
